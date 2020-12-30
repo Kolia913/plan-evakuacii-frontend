@@ -1,0 +1,228 @@
+<template>
+        <main class="admin-content">
+      
+      
+       
+          <header class="admin-header">
+      
+              <div class="admin-header__btns">
+                  <nuxt-link tag="a" to="/admin" class="add-order__btn add-order__btn--home">
+                      <img class="" src="@/static/icons/home.svg" alt="" />
+                    </nuxt-link>
+                  <h2 class="admin-header__title">Создать заказ</h2>
+             
+                  
+           
+                </div>
+      
+          </header>
+         
+        <div class="content-table">
+          <div class="form__container">
+                      <form class="form" @submit.prevent="submitOrder()">
+            <div class="form__box">
+                  <input
+                    type="text"
+                    id="fname"
+                    name="firstname"
+                    v-model="$v.firstname.$model"
+                    required=""
+                  />
+                  <label for="fname">Имя</label>
+                </div>
+                <div class="form__box">
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="telephone"
+                    maxlength="11"
+                    v-model="$v.phone.$model"
+                    required=""
+                  />
+                  <label for="phone">Телефон</label>
+                </div>
+                <div class="form__box">
+                  <input
+                    type="email"
+                    id="email"
+                    name="e-mail"
+                    v-model="$v.email.$model"
+                    required=""
+                  />
+                  <label for="email">E-mail</label>
+                </div>
+                <div class="form__box">
+                  <input
+                    type="text"
+                    id="orgname"
+                    name="organization-name"
+                    v-model="$v.orgname.$model"
+                    required=""
+                  />
+                  <label for="orgname">Название организации</label>
+                </div>
+                <div class="form__box">
+                  <input
+                    type="text"
+                    id="orgadres"
+                    name="organization-adres"
+                    v-model="$v.orgadres.$model"
+                    required=""
+                  />
+                  <label for="orgadres">Адрес организации</label>
+                </div>
+                <div class="form__box">
+                  <input
+                    type="number"
+                    id="count"
+                    name="countscheme"
+                    v-model="$v.count.$model"
+                    required=""
+                  />
+                  <label for="count">Количество схем</label>
+                </div>
+                     <div class="form__box">
+                  <input
+                    type="checkbox"
+                    id="idDone"
+                    name="idDone"
+                    v-model="$v.isDone.$model"
+                  />
+                  <label for="count">Выполнен</label>
+                </div>
+                <input type="submit" value="Отправить" />
+        </form>
+            </div>
+      
+        </div>
+       
+      
+    </main>
+</template>
+
+<script>
+import {validationMixin} from 'vuelidate'
+import {required, email, minLength, maxLength} from 'vuelidate/lib/validators'
+
+export default {
+  layout: 'admin',
+  mixins: [validationMixin],
+  data(){
+        return  {
+          id: '',
+          firstname: '',
+          phone: '',
+          email: '',
+          orgname: '',
+          orgadres: '',
+          count: '',
+          isDone: false
+      }
+    },
+    validations: {
+          firstname: {
+            required,
+            maxLength: maxLength(255),
+          },
+          phone: {
+            required,
+            minLength: minLength(7),
+            maxLength: maxLength(11)
+          },
+          email: {
+            required,
+            email
+          },
+          orgname: {
+            required,
+            maxLength: maxLength(255)
+          },
+          orgadres: {
+             required,
+            maxLength: maxLength(255)
+          },
+          count: {
+            required
+          },
+          isDone: {
+            required
+          }
+    },
+    async mounted() {
+      const id = this.$route.params.id
+      const order = await this.$axios.get(`/api/v1/orders/single/${id}`)
+          this.id = id
+          this.firstname = order.data.firstname,
+          this.phone = order.data.phone,
+          this.email = order.data.email,
+          this.orgname = order.data.orgname,
+          this.orgadres = order.data.orgadres,
+          this.count = order.data.count,
+          this.isDone = order.data.isDone
+      
+    },
+    watch: {
+      count: function (newCount, oldCount) {
+       if(newCount < 1) {
+         this.count = ''
+       }
+    }
+    },
+    methods: {
+     submitOrder() {
+        this.$v.$touch()
+        if(this.$v.firstname.$dirty && this.$v.firstname.$invalid) {
+          this.$toast.error('Вы ввели некорректное имя!')
+          return
+        }  
+        if(this.$v.phone.$dirty && this.$v.phone.$invalid) {
+          this.$toast.error('Вы ввели некорректный телефон!')
+          return
+        }
+        if(this.$v.email.$dirty && this.$v.email.$invalid) {
+          this.$toast.error('Вы ввели некорректный E-mail!')
+          return
+        }
+        if(this.$v.orgname.$dirty && this.$v.orgname.$invalid) {
+          this.$toast.error('Вы ввели некорректное имя организации!')
+          return
+        }
+        if(this.$v.orgadres.$dirty && this.$v.orgadres.$invalid) {
+          this.$toast.error('Вы ввели некорректный адресс организации!')
+          return
+        }
+         if(this.$v.count.$dirty && this.$v.count.$invalid) {
+          this.$toast.error('Введите количество схем!')
+          return
+        }
+        const order = {
+         firstname: this.firstname,
+         phone: this.phone,
+         email: this.email,
+         orgname: this.orgname,
+         orgadres: this.orgadres,
+         count: +this.count,
+         isDone: this.isDone
+        }
+          const newOrder = this.$axios.put(`api/v1/orders/update/${this.id}`, order)
+          .then( res => {
+            this.$toast.success("Заказ обновлён!")
+                      this.firstname = res.data.firstname,
+                      this.phone = res.data.phone,
+                      this.email = res.data.email,
+                      this.orgname = res.data.orgname,
+                      this.orgadres = res.data.orgadres,
+                      this.count = res.data.count,
+                      this.isDone = res.data.isDone
+            })
+            .catch( err => this.$toast.error("Ошибка обновления заказа, убедитесь в корректности данных!"))
+          
+      }
+    }
+}
+</script>
+
+
+<style lang="scss" scoped>
+    @import '@/assets/css/admin';
+</style>
